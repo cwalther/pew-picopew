@@ -1,11 +1,5 @@
 from micropython import const
-import board
-import busio
-import digitalio
-try:
-    import neopixel_write
-except ImportError:
-    pass
+import machine
 import time
 
 
@@ -31,14 +25,15 @@ K_O = const(0x20)
 
 _i2c = None
 _buffer = None
+_buffer1 = None
 SLICES = True
 
 
 def brightness(level):
-    global _buffer, _i2c
+    global _buffer1, _i2c
 
-    _buffer[0] = 0xe0 | level & 0x0f
-    _i2c.writeto(0x70, _buffer, end=1)
+    _buffer1[0] = 0xe0 | level & 0x0f
+    _i2c.writeto(0x70, _buffer1)
 
 
 def show(pix):
@@ -67,16 +62,16 @@ def show(pix):
 
 
 def keys():
-    global _buffer, _i2c
+    global _i2c, _buffer1
     global _last_keys, _keys
 
-    now = time.monotonic()
-    if now - _last_keys < 0.01:
+    now = time.ticks_ms()
+    if time.ticks_diff(now, _last_keys) < 10:
         return _keys
     _last_keys = now
 
-    _temp[0] = 0x40
-    _i2c.writeto(0x70, _temp, end=1, stop=False)
+    _buffer1[0] = 0x40
+    _i2c.writeto(0x70, _buffer1, False)
     _i2c.readfrom_into(0x70, _temp)
     _keys = int.from_bytes(_temp, 'little') >> 5
     if _keys & 0b011110 == 0b011110:
@@ -86,9 +81,14 @@ def keys():
 
 def tick(delay):
     global _tick
-    now = time.monotonic()
-    _tick = max(_tick + delay, now)
-    time.sleep(max(0, _tick - now))
+    delay = int(delay*1000)
+    now = time.ticks_ms()
+    _tick = time.ticks_add(_tick, delay)
+    diff = time.ticks_diff(_tick, now)
+    if diff < 0:
+    	_tick = now
+    	diff = 0
+    time.sleep_ms(diff)
 
 
 class GameOver(Exception):
@@ -210,24 +210,24 @@ class Pix:
 
 
 def init():
-    global _i2c, _buffer, _temp, _keys, _last_keys, _tick
+    global _i2c, _buffer, _buffer1, _temp, _keys, _last_keys, _tick
     global SLICES
 
-    _tick = time.monotonic()
+    _tick = time.ticks_ms()
     _buffer = bytearray(17)
+    _buffer1 = bytearray(1)
 
     if _i2c is not None:
         return
 
-    _i2c = busio.I2C(sda=board.SDA, scl=board.SCL)
-    _i2c.try_lock()
+    _i2c = machine.I2C(sda=machine.Pin(4), scl=machine.Pin(5))
     _temp = bytearray(2)
     _keys = 0
     _last_keys = 0
 
-    _buffer[0] = 0x21
+    _buffer1[0] = 0x21
     try:
-        _i2c.writeto(0x70, _buffer, end=1)
+        _i2c.writeto(0x70, _buffer1)
     except OSError:
         raise RuntimeError("PewPew Lite board not found")
     try:
@@ -235,14 +235,7 @@ def init():
     except TypeError:
         SLICES = False
 
-    try:
-        pin = digitalio.DigitalInOut(board.NEOPIXEL)
-        pin.switch_to_output()
-        neopixel_write.neopixel_write(pin, b'\x00\x00\x00')
-    except Exception:
-        pass
-
-    _buffer[0] = 0x81
-    _i2c.writeto(0x70, _buffer, end=1)
+    _buffer1[0] = 0x81
+    _i2c.writeto(0x70, _buffer1)
 
     brightness(7)
