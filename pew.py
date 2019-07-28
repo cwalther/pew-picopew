@@ -25,58 +25,45 @@ K_O = const(0x20)
 
 _i2c = None
 _buffer = None
-_buffer1 = None
-SLICES = True
 
 
 def brightness(level):
-    global _buffer1, _i2c
-
-    _buffer1[0] = 0xe0 | level & 0x0f
-    _i2c.writeto(0x70, _buffer1)
+    level &= 0xf
+    _i2c.writeto_mem(80, 0xfe, b'\xc5')
+    _i2c.writeto_mem(80, 0xfd, b'\x03')
+    _i2c.writeto_mem(80, 0x01, b'\x01\x04\t\x10\x19$1@Qdy\x90\xa9\xc4\xe1\xff'[level:level+1])
+    _i2c.writeto_mem(80, 0xfe, b'\xc5')
+    _i2c.writeto_mem(80, 0xfd, b'\x01')
 
 
 def show(pix):
     global _buffer, _i2c
 
-    # pixel = pix.pixel
     buffer = pix.buffer
     width = pix.width
-    _buffer[0] = 0x00
-    index = 1
-    for x in range(7, -1, -1):
-        b = 0
-        a = 0
-        position = x
-        for y in range(8):
-            # color = pixel(x, y)
-            color = buffer[position]
-            position += width
-            b = b << 1 | (color >> 1) & 0x01
-            a = a << 1 | color & 0x01
-        _buffer[index] = b
-        index += 1
-        _buffer[index] = a
-        index += 1
-    _i2c.writeto(0x70, _buffer)
+    index = 0
+    for y in range(8):
+        position = y*width
+        for x in range(8):
+            pixel = buffer[position]
+            position += 1
+            _buffer[index] = 0xff if pixel & 1 else 0
+            _buffer[index+8] = 0xa0 if pixel & 2 else 0
+            index += 1
+        index += 8
+    _i2c.writeto_mem(80, 0x00, _buffer)
 
 
 def keys():
-    global _i2c, _buffer1
-    global _last_keys, _keys
-
-    now = time.ticks_ms()
-    if time.ticks_diff(now, _last_keys) < 10:
-        return _keys
-    _last_keys = now
-
-    _buffer1[0] = 0x40
-    _i2c.writeto(0x70, _buffer1, False)
-    _i2c.readfrom_into(0x70, _temp)
-    _keys = int.from_bytes(_temp, 'little') >> 5
-    if _keys & 0b011110 == 0b011110:
+    global _keys, _keypins
+    nk = 0
+    for i in range(6):
+        nk |= ((_keypins[i].value() ^ 1) << i)
+    k = _keys | nk
+    _keys = nk
+    if k & 0b011110 == 0b011110:
         raise GameOver()
-    return _keys
+    return k
 
 
 def tick(delay):
@@ -86,8 +73,8 @@ def tick(delay):
     _tick = time.ticks_add(_tick, delay)
     diff = time.ticks_diff(_tick, now)
     if diff < 0:
-    	_tick = now
-    	diff = 0
+        _tick = now
+        diff = 0
     time.sleep_ms(diff)
 
 
@@ -179,7 +166,7 @@ class Pix:
                      self.height - dy)
         source_buffer = memoryview(source.buffer)
         self_buffer = self.buffer
-        if key is None and SLICES:
+        if key is None:
             for row in range(height):
                 xx = y * source.width + x
                 dxx = dy * self.width + dx
@@ -210,32 +197,42 @@ class Pix:
 
 
 def init():
-    global _i2c, _buffer, _buffer1, _temp, _keys, _last_keys, _tick
-    global SLICES
+    global _i2c, _buffer, _keys, _tick, _keypins
 
     _tick = time.ticks_ms()
-    _buffer = bytearray(17)
-    _buffer1 = bytearray(1)
+    _buffer = bytearray(128)
 
     if _i2c is not None:
         return
 
-    _i2c = machine.I2C(sda=machine.Pin(4), scl=machine.Pin(5))
-    _temp = bytearray(2)
+    _i2c = machine.I2C(sda=machine.Pin(21), scl=machine.Pin(22))
+
+    _keypins = (
+        machine.Pin(14, machine.Pin.IN, machine.Pin.PULL_UP), # X
+        machine.Pin(5, machine.Pin.IN, machine.Pin.PULL_UP), # down
+        machine.Pin(23, machine.Pin.IN, machine.Pin.PULL_UP), # left
+        machine.Pin(18, machine.Pin.IN, machine.Pin.PULL_UP), # right
+        machine.Pin(19, machine.Pin.IN, machine.Pin.PULL_UP), # up
+        machine.Pin(4, machine.Pin.IN, machine.Pin.PULL_UP) # O
+    )
     _keys = 0
-    _last_keys = 0
+    def makekeyhandler(k):
+        def handler(p):
+            global _keys
+            _keys |= k
+        return handler
+    for i, p in enumerate(_keypins):
+        p.irq(handler=makekeyhandler(1<<i), trigger=machine.Pin.IRQ_FALLING)
 
-    _buffer1[0] = 0x21
     try:
-        _i2c.writeto(0x70, _buffer1)
+        _i2c.readfrom_mem(80, 0x11, 1) # reset
     except OSError:
-        raise RuntimeError("PewPew Lite board not found")
-    try:
-        _buffer[1:3] = b'\x00\x00'
-    except TypeError:
-        SLICES = False
-
-    _buffer1[0] = 0x81
-    _i2c.writeto(0x70, _buffer1)
+        raise RuntimeError("PewPew board not found")
+    _i2c.writeto_mem(80, 0xfe, b'\xc5') # unlock pages
+    _i2c.writeto_mem(80, 0xfd, b'\x03') # go to function page
+    _i2c.writeto_mem(80, 0x00, b'\x01') # power on
+    _i2c.writeto_mem(80, 0xfe, b'\xc5') # unlock pages
+    _i2c.writeto_mem(80, 0xfd, b'\x00') # go to LED control page
+    _i2c.writeto_mem(80, 0x00, b'\xff'*16) # all 128 LEDs on
 
     brightness(7)
