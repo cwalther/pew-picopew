@@ -54,11 +54,16 @@ def show(pix):
     _i2c.writeto_mem(80, 0x00, _buffer)
 
 
-def keys():
-    global _keys, _keypins
-    nk = 0
+def _scankeys():
+    k = 0
     for i in range(6):
-        nk |= ((_keypins[i].value() ^ 1) << i)
+        k |= ((_keypins[i].value() ^ 1) << i)
+    return k
+
+
+def keys():
+    global _keys
+    nk = _scankeys()
     k = _keys | nk
     _keys = nk
     if k & 0b011110 == 0b011110:
@@ -216,13 +221,11 @@ def init():
         machine.Pin(4, machine.Pin.IN, machine.Pin.PULL_UP) # O
     )
     _keys = 0
-    def makekeyhandler(k):
-        def handler(p):
-            global _keys
-            _keys |= k
-        return handler
-    for i, p in enumerate(_keypins):
-        p.irq(handler=makekeyhandler(1<<i), trigger=machine.Pin.IRQ_FALLING)
+    def handler(p):
+        global _keys
+        _keys |= _scankeys()
+    for p in _keypins:
+        p.irq(handler=handler, trigger=machine.Pin.IRQ_FALLING)
 
     try:
         _i2c.readfrom_mem(80, 0x11, 1) # reset
