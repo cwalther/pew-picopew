@@ -62,12 +62,15 @@ def _scankeys():
 
 
 def keys():
-    global _keys
+    global _keys, _gameover
     nk = _scankeys()
     k = _keys | nk
     _keys = nk
-    if k & 0b011110 == 0b011110:
+    if k & 0b011110 == 0b011110 and not _gameover:
+        _gameover = True
         raise GameOver()
+    elif k == 0:
+        _gameover = False
     return k
 
 
