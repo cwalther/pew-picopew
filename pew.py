@@ -48,9 +48,9 @@ def show(pix):
             pixel = buffer[position]
             position += 1
             _buffer[index] = 0xff if pixel & 1 else 0
-            _buffer[index+8] = 0xa0 if pixel & 2 else 0
             index += 1
-        index += 8
+            _buffer[index] = 0xa0 if pixel & 2 else 0
+            index += 1
     _i2c.writeto_mem(80, 0x00, _buffer)
 
 
@@ -216,12 +216,12 @@ def init():
     _i2c = machine.I2C(sda=machine.Pin(21), scl=machine.Pin(22))
 
     _keypins = (
-        machine.Pin(14, machine.Pin.IN, machine.Pin.PULL_UP), # X
-        machine.Pin(5, machine.Pin.IN, machine.Pin.PULL_UP), # down
+        machine.Pin(33, machine.Pin.IN, machine.Pin.PULL_UP), # X
+        machine.Pin(18, machine.Pin.IN, machine.Pin.PULL_UP), # down
         machine.Pin(23, machine.Pin.IN, machine.Pin.PULL_UP), # left
-        machine.Pin(18, machine.Pin.IN, machine.Pin.PULL_UP), # right
+        machine.Pin(5, machine.Pin.IN, machine.Pin.PULL_UP), # right
         machine.Pin(19, machine.Pin.IN, machine.Pin.PULL_UP), # up
-        machine.Pin(4, machine.Pin.IN, machine.Pin.PULL_UP) # O
+        machine.Pin(32, machine.Pin.IN, machine.Pin.PULL_UP) # O
     )
     _keys = 0
     def handler(p):
