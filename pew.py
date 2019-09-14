@@ -216,12 +216,12 @@ def init():
     _i2c = machine.I2C(sda=machine.Pin(21), scl=machine.Pin(22))
 
     _keypins = (
-        machine.Pin(33, machine.Pin.IN, machine.Pin.PULL_UP), # X
+        machine.Pin(32, machine.Pin.IN, machine.Pin.PULL_UP), # X
         machine.Pin(18, machine.Pin.IN, machine.Pin.PULL_UP), # down
         machine.Pin(23, machine.Pin.IN, machine.Pin.PULL_UP), # left
         machine.Pin(5, machine.Pin.IN, machine.Pin.PULL_UP), # right
         machine.Pin(19, machine.Pin.IN, machine.Pin.PULL_UP), # up
-        machine.Pin(32, machine.Pin.IN, machine.Pin.PULL_UP) # O
+        machine.Pin(33, machine.Pin.IN, machine.Pin.PULL_UP) # O
     )
     _keys = 0
     def handler(p):
