@@ -207,6 +207,11 @@ class Pix:
 def init():
     global _i2c, _buffer, _keys, _tick, _keypins
 
+    # turn off dotstar to save power
+    machine.Pin(13, machine.Pin.IN, machine.Pin.PULL_HOLD)
+    machine.Pin(12, machine.Pin.IN)
+    machine.Pin(2, machine.Pin.IN)
+
     _tick = time.ticks_ms()
     _buffer = bytearray(128)
 
