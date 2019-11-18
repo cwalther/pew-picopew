@@ -4,16 +4,17 @@ import time
 
 
 _FONT = (
-    b'{{{{{{wws{w{HY{{{{YDYDY{sUtGUsH[wyH{uHgHE{ws{{{{vyxyv{g[K[g{{]f]{{{wDw{{'
-    b'{{{wy{{{D{{{{{{{w{K_w}x{VHLHe{wuwww{`KfyD{UKgKU{w}XDK{DxTKT{VxUHU{D[wyx{'
-    b'UHfHU{UHEKe{{w{w{{{w{wy{KwxwK{{D{D{{xwKwx{eKg{w{VIHyB{fYH@H{dHdHd{FyxyF{'
-    b'`XHX`{DxtxD{Dxtxx{FyxIF{HHDHH{wwwww{KKKHU{HXpXH{xxxxD{Y@DLH{IL@LX{fYHYf{'
-    b'`HH`x{fYHIF{`HH`H{UxUKU{Dwwww{HHHIR{HHH]w{HHLD@{HYsYH{HYbww{D[wyD{txxxt{'
-    b'x}w_K{GKKKG{wLY{{{{{{{{Dxs{{{{{BIIB{x`XX`{{ByyB{KBIIB{{WIpF{OwUwww{`YB[`'
-    b'x`XHH{w{vwc{K{OKHUxHpXH{vwws_{{dD@H{{`XHH{{fYYf{{`XX`x{bYIBK{Ipxx{{F}_d{'
-    b'wUws_{{HHIV{{HH]s{{HLD@{{HbbH{{HHV[a{D_}D{Cw|wC{wwwwwwpwOwp{WKfxu{@YYY@{'
+    b'JJJJJJFFBJFJyhJJJJh5h5hJBtAreBynFLyJDy\xd6y\xd4JFBJJJJGHIHGJVjzjVJJlWlJJ'
+    b'JFuFJJJJJJFLJJuJJJJJJJFJznFLIJgy}yTJFDFFFJQzWHuJdzVzdJFLiuzJuIezeJgIeydJ'
+    b'unFLIJdyWydJdytzTJJFJFJJJFJFLJzFIFzJJuJuJJIFzFIJTzVJFJgxyHsJWhyqyJUyUyUJ'
+    b'wHIHwJQiyiQJuIEIuJuIEIIJwHIxwJyyuyyJWFFFWJzzzydJymAmyJIIIIuJhqu}yJxmd|iJ'
+    b'WhyhWJQyyQIJWhy|gzQyyQyJtIdzeJuFFFFJyyyxcJyyhSFJy}qulJylSlyJyhSFFJunFLuJ'
+    b'EIIIEJILFnzJvzzzvJF}hJJJJJJJJuIBJJJJJwxysJIQiyQJJwHIsJzsxysJJgxAwJ~FdFFF'
+    b'JsxsjTIQiyyJFNGFRJzZ~z{TIyAmyJGFFFnJJUuqyJJQiyyJJWxiWJJQiyQIJsxyszJ|AIIJ'
+    b'JwLnUJFdFFnJJyyxgJJyhSFJJy}dlJJySSyJJyygjTJunLuJrFMFrJFFFFFFAF~FAJJ\xc78'
+    b'JJJ\xd3,\xd3,\xd3,'
 )
-_SALT = const(132)
+_SALT = const(181)
 
 
 K_X = const(0x01)
@@ -128,7 +129,11 @@ class Pix:
         font = memoryview(_FONT)
         if colors is None:
             if color is None:
-                colors = (3, 2, bgcolor, bgcolor)
+                colors = [3, 2, 1, 0]
+                if _paletteoffset == 0:
+                    colors = [c + 80 for c in colors]
+                if bgcolor != 0:
+                    colors[2] = colors[3] = bgcolor
             else:
                 colors = (color, color, bgcolor, bgcolor)
         x = 0
