@@ -36,6 +36,28 @@ def brightness(level):
     _i2c.writeto_mem(80, 0xfd, b'\x01')
 
 
+def palette(pal=False, offset=0):
+    global _palette, _palettesize, _paletteoffset
+    if pal is not False:
+        if not pal:
+            pal = bytearray(768)
+            for i in range(256):
+                if (i & 0xc0) == 0:
+                    b = (255, 121, 42, 7)[(i >> 4) & 3]
+                    pal[3*i] = (b*(0, 0, 255, 160)[i & 3] + 127)//255
+                    pal[3*i+1] = b*(i & 1)
+                elif (i & 0xc0) == 0x40:
+                    b = (0, 15, 89, 255)[i & 3]
+                    pal[3*i] = (b*(0, 64, 255, 255)[(i >> 4) & 3] + 127)//255
+                    pal[3*i+1] = (b*(255, 255, 255, 0)[(i >> 4) & 3] + 127)//255
+                else:
+                    pal[3*i] = (0, 1, 2, 4, 8, 15, 24, 35, 50, 68, 89, 114, 143, 176, 213, 255)[(i >> 3) & 15]
+                    pal[3*i+1] = (0, 2, 10, 28, 60, 106, 171, 255)[i & 7]
+        _palette = pal
+    _palettesize = len(_palette)//3
+    _paletteoffset = offset % _palettesize
+
+
 def show(pix):
     global _buffer, _i2c
 
@@ -45,11 +67,11 @@ def show(pix):
     for y in range(8):
         position = y*width
         for x in range(8):
-            pixel = buffer[position]
+            pixel = 3*((buffer[position] + _paletteoffset) % _palettesize)
             position += 1
-            _buffer[index] = 0xff if pixel & 1 else 0
+            _buffer[index] = _palette[pixel + 1]
             index += 1
-            _buffer[index] = 0xa0 if pixel & 2 else 0
+            _buffer[index] = _palette[pixel]
             index += 1
     _i2c.writeto_mem(80, 0x00, _buffer)
 
@@ -246,4 +268,5 @@ def init():
     _i2c.writeto_mem(80, 0xfd, b'\x00') # go to LED control page
     _i2c.writeto_mem(80, 0x00, b'\xff'*16) # all 128 LEDs on
 
+    palette(None)
     brightness(7)
