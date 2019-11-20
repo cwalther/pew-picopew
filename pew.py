@@ -1,6 +1,9 @@
 from micropython import const
 import machine
 import time
+import socket
+import uwebsocket
+import websocket_helper
 
 
 _FONT = (
@@ -75,6 +78,7 @@ def show(pix):
             _buffer[index] = _palette[pixel]
             index += 1
     _i2c.writeto_mem(80, 0x00, _buffer)
+    _send(_buffer)
 
 
 def _scankeys():
@@ -85,7 +89,7 @@ def _scankeys():
 
 
 def keys():
-    global _keys, _gameover
+    global _keys, _gameover, _sentkeys
     nk = _scankeys()
     k = _keys | nk
     _keys = nk
@@ -94,6 +98,9 @@ def keys():
         raise GameOver()
     elif k == 0:
         _gameover = False
+    if _sentkeys != k:
+        _sentkeys = k
+        _send(bytes((k,)))
     return k
 
 
@@ -231,8 +238,33 @@ class Pix:
         )
 
 
+def _accept_conn(listen_sock):
+    global _websock
+    if _websock:
+        _websock.close()
+    cl, remote_addr = listen_sock.accept()
+    print('Remote display connection from', remote_addr)
+    websocket_helper.server_handshake(cl)
+    _websock = uwebsocket.websocket(cl, True)
+    cl.setblocking(False)
+    _websock.ioctl(9, 2) # SET_DATA_OPTS binary
+
+
+def _send(data):
+    global _websock
+    if _websock:
+        try:
+            _websock.write(data)
+            if _websock.readinto(_buffer, 128) == 0:
+                print('Remote display connection closed')
+                _websock.close()
+                _websock = None
+        except OSError as e:
+            print('Error talking to remote display', e)
+
+
 def init():
-    global _i2c, _buffer, _keys, _tick, _keypins
+    global _i2c, _buffer, _keys, _tick, _keypins, _listensock, _websock, _sentkeys
 
     # turn off dotstar to save power
     machine.Pin(13, machine.Pin.IN, machine.Pin.PULL_HOLD)
@@ -275,3 +307,11 @@ def init():
 
     palette(None)
     brightness(7)
+
+    _websock = None
+    _listensock = socket.socket()
+    _listensock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    _listensock.bind(socket.getaddrinfo("0.0.0.0", 8400)[0][4])
+    _listensock.listen(1)
+    _listensock.setsockopt(socket.SOL_SOCKET, 20, _accept_conn)
+    _sentkeys = -1
