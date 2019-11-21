@@ -51,8 +51,8 @@ function disconnect() {
 
 function onWindowResize() {
 	var img = document.getElementById('image');
-	img.style.width = window.innerWidth + 'px';
-	img.style.height = window.innerHeight + 'px';
+	img.style.width = (window.innerWidth - 16) + 'px';
+	img.style.height = (window.innerHeight - 16) + 'px';
 }
 
 document.addEventListener('DOMContentLoaded', function() {
@@ -69,6 +69,7 @@ document.addEventListener('DOMContentLoaded', function() {
 body {
 	background-color: #000000;
 	margin: 0;
+	text-align: center;
 }
 </style>
 </head>
