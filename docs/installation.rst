@@ -13,7 +13,7 @@ Libraries
 
 Download the `PicoPew software <https://github.com/cwalther/pew-picopew>`_ from GitHub. If you are familiar with Git, you may clone it, otherwise use the *Download ZIP* option under the *Clone or download* button.
 
-Copy ``pew.py``, ``random.py``, and ``time.py`` to the ``/lib/`` folder on the TinyPICO. (You may need to create it using ``import os; os.mkdir('/lib')`` on the REPL, and if you are using the HTML WebREPL client, change to it using ``os.chdir('/lib')``.)
+Copy the files from the *lib* folder (``pew.py``, ``random.py``, ``time.py``) to the ``/lib/`` folder on the TinyPICO. (You may need to create it using ``import os; os.mkdir('/lib')`` on the REPL, and if you are using the HTML WebREPL client, change to it using ``os.chdir('/lib')``.)
 
 ``pew.py`` is the :ref:`Pew library <pew-library-additions>`, the other two files are CircuitPython compatibility libraries that add some functions commonly used by PewPew games that are not present in MicroPython.
 
