@@ -3,9 +3,9 @@ Assembly
 
 PicoPew comes as a partially assembled kit and requires some soldering to complete assembly. It is not recommended for complete beginners to soldering, as space is quite tight in some places.
 
-There are many possible ways of connecting a TinyPICO to the PicoPew board, depending on whether you want the TinyPICO to be removable, whether you want to add a battery and of which size, whether you want to add an `audio shield <https://www.tinypico.com/add-ons>`_, … it’s up to you to choose.
+There are many possible ways of connecting a TinyPICO to the PicoPew board, depending on whether you want the TinyPICO to be removable, whether you already have headers on your TinyPICO, whether you want to add a battery and of which size, whether you want to add an `audio shield <https://www.tinypico.com/add-ons>`_, … it’s up to you to choose.
 
-The way proposed here
+The way proposed here assumes a virgin TinyPICO and
 
 * keeps the TinyPICO removable and breadboard-friendly when combined with two additional male pin headers,
 * has space for a small LiPo battery between the boards,
@@ -24,6 +24,8 @@ If your kit is from the first manufactured batch, it may have a 1.2 mm thick cap
 
 1. Pin Headers
 --------------
+
+(These instructions are for the arrangement shown above. You are free to use different headers or a different arrangement of the included ones.)
 
 Take the male pin headers and use pliers or a vise or similar tools to push or pull the pins through the black plastic part until their short part is short enough to fit into the female headers (socket strips) without leaving a gap between the plastic parts. The remaining length should be around 2.5 mm. Make sure you get this right before soldering. **If you leave the pins too long and get a gap, the whole assembly will be thicker and will not fit into the 3D-printed case.** It does not matter in which direction you push or pull the pins – the black plastic part has a groove that is meant to go toward the soldering side, but it also works the other way around.
 
