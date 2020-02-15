@@ -27,3 +27,10 @@ PicoPew is an open-source spare-time project by Christian Walther. More informat
 * `Software <https://github.com/cwalther/pew-picopew>`_ and `hardware design files <https://github.com/cwalther/picopew-hardware>`_ on GitHub
 * `Development blog <https://hackaday.io/project/167369>`_ on Hackaday.io
 * `CAD drawings <https://cad.onshape.com/documents/e3309d4ac17b46a5b68f1692/w/48c8a4f558bfebf576ff0b13/e/29a3e79e4175691d6c08b592>`_ in Onshape
+
+Support
+-------
+
+If you need help, please ask on the `PewPew mailing list <https://mail.python.org/archives/list/pewpew@python.org/>`_.
+
+I also occasionally visit `Unexpected Maker’s Discord <https://discord.gg/xAHpApP>`_.
