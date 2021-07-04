@@ -5,13 +5,16 @@ PicoPew comes as a partially assembled kit and requires some soldering to comple
 
 There are many possible ways of connecting a TinyPICO to the PicoPew board, depending on whether you want the TinyPICO to be removable, whether you already have headers on your TinyPICO, whether you want to add a battery and of which size, whether you want to add an `audio shield <https://www.tinypico.com/add-ons>`_, … it’s up to you to choose.
 
-The way proposed here assumes a virgin TinyPICO and
+The way proposed here assumes a virgin TinyPICO V1 and
 
 * keeps the TinyPICO removable and breadboard-friendly when combined with two additional male pin headers,
 * has space for a small LiPo battery between the boards,
 * fits into the 3D-printed case for which a 3D model is provided.
 
 (Battery and case are not included in the kit.)
+
+.. note::
+   These instructions were written for TinyPICO V1. If you have a TinyPICO V2, which does not have the PSRAM chip on the underside and whose antenna is smaller, a more compact package may be possible with a different arrangement of headers. It is up to you to figure this out and if needed adapt the 3D-printed case design. Following the instructions should still work, but may not result in the most space-saving package possible, and the unmodified 3D-printed case will have unneeded or misplaced openings.
 
 .. image:: exploded.png
    :width: 50%
