@@ -245,7 +245,7 @@ def init():
     if _i2c is not None:
         return
 
-    _i2c = machine.I2C(sda=machine.Pin(21), scl=machine.Pin(22))
+    _i2c = machine.I2C(0, sda=machine.Pin(21), scl=machine.Pin(22))
 
     _keypins = (
         machine.Pin(32, machine.Pin.IN, machine.Pin.PULL_UP), # X
