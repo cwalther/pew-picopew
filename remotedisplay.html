@@ -5,14 +5,16 @@
 <!--<meta name="viewport" content="user-scalable=no, width=device-width, initial-scale=1, maximum-scale=1">-->
 <title>PicoPew</title>
 <script type="text/javascript">
-var ws = null;
+var liveSocket = null;
+var connectingSockets = [];
+var lastActivity = 0;
 var gamma = [19, 33, 42, 48, 53, 57, 61, 65, 68, 71, 74, 77, 79, 82, 84, 86, 89, 91, 93, 94, 96, 98, 100, 102, 103, 105, 106, 108, 109, 111, 112, 114, 115, 117, 118, 119, 120, 122, 123, 124, 125, 127, 128, 129, 130, 131, 132, 133, 134, 136, 137, 138, 139, 140, 141, 142, 143, 144, 145, 146, 146, 147, 148, 149, 150, 151, 152, 153, 154, 154, 155, 156, 157, 158, 159, 160, 160, 161, 162, 163, 164, 164, 165, 166, 167, 167, 168, 169, 170, 170, 171, 172, 173, 173, 174, 175, 175, 176, 177, 177, 178, 179, 179, 180, 181, 181, 182, 183, 183, 184, 185, 185, 186, 187, 187, 188, 189, 189, 190, 190, 191, 192, 192, 193, 193, 194, 195, 195, 196, 196, 197, 198, 198, 199, 199, 200, 200, 201, 202, 202, 203, 203, 204, 204, 205, 205, 206, 206, 207, 208, 208, 209, 209, 210, 210, 211, 211, 212, 212, 213, 213, 214, 214, 215, 215, 216, 216, 217, 217, 218, 218, 219, 219, 220, 220, 221, 221, 222, 222, 223, 223, 224, 224, 225, 225, 226, 226, 226, 227, 227, 228, 228, 229, 229, 230, 230, 231, 231, 231, 232, 232, 233, 233, 234, 234, 235, 235, 235, 236, 236, 237, 237, 238, 238, 239, 239, 239, 240, 240, 241, 241, 241, 242, 242, 243, 243, 244, 244, 244, 245, 245, 246, 246, 246, 247, 247, 248, 248, 248, 249, 249, 250, 250, 250, 251, 251, 252, 252, 252, 253, 253, 254, 254, 254, 255, 255];
 
 function connect() {
 	if (window.location.hash.length <= 1) {
 		window.location.hash = '#picopew.local:8400';
 	}
-	ws = new WebSocket('ws://' + window.location.hash.substring(1));
+	var ws = new WebSocket('ws://' + window.location.hash.substring(1));
 	ws.binaryType = 'arraybuffer';
 	ws.addEventListener('message', e => {
 		var a = new Uint8Array(e.data);
@@ -34,13 +36,53 @@ function connect() {
 				a >>= 1;
 			}
 		}
+		lastActivity = Date.now();
 	});
-	ws.addEventListener('error', e => { console.log('Websocket error', e); });
-	ws.addEventListener('close', e => { console.log('Websocket closed', e); });
+	ws.addEventListener('open', e => {
+		if (!liveSocket) {
+			liveSocket = ws;
+			while (connectingSockets.length > 0) {
+				var s = connectingSockets.shift();
+				if (s !== liveSocket) s.close();
+			}
+			document.getElementById('reconnecting').style.display = 'none';
+		}
+		else {
+			ws.close();
+		}
+	});
+	ws.addEventListener('error', e => {
+		if (e.target === liveSocket) {
+			console.log('Websocket error', e);
+			liveSocket = null;
+		}
+		e.target.close();
+	});
+	ws.addEventListener('close', e => {
+		if (e.target === liveSocket) {
+			console.log('Websocket closed', e);
+			liveSocket = null;
+		}
+	});
+	return ws;
 }
 
-function disconnect() {
-	ws.close();
+function connectionWatchdog() {
+	if (liveSocket && Date.now() - lastActivity > 19000) {
+		liveSocket.close();
+		liveSocket = null;
+	}
+	if (!liveSocket) {
+		var indicator = document.getElementById('reconnecting');
+		indicator.style.display = 'inline';
+		indicator.classList.add('pulse'); 
+		window.requestAnimationFrame(() => indicator.classList.remove('pulse'));
+
+		connectingSockets.push(connect());
+		while (connectingSockets.length > 4) {
+			connectingSockets.shift().close();
+		}
+	}
 }
 
 function onWindowResize() {
@@ -50,12 +92,16 @@ function onWindowResize() {
 }
 
 document.addEventListener('DOMContentLoaded', function() {
-	connect();
 	window.addEventListener('beforeunload', function () {
-		disconnect();
+		if (liveSocket) liveSocket.close();
+		for (socket of connectingSockets) {
+			socket.close();
+		}
 	});
 	window.addEventListener('resize', onWindowResize);
 	onWindowResize();
+	window.setInterval(connectionWatchdog, 5000);
+	connectionWatchdog();
 });
 
 </script>
@@ -64,6 +110,14 @@ body {
 	background-color: #000000;
 	margin: 0;
 	text-align: center;
+}
+#reconnecting {
+	fill: #990033;
+	transition: fill 1s ease-out;
+}
+#reconnecting.pulse {
+	fill: #FF0099;
+	transition: fill 0s;
 }
 </style>
 </head>
@@ -169,6 +223,7 @@ body {
 				<rect x="5.1"  y="-9.9" width="2.3" height="2.3" rx="0.5" style="fill: #131313;" id="px62"/>
 				<rect x="7.6"  y="-9.9" width="2.3" height="2.3" rx="0.5" style="fill: #131313;" id="px63"/>
 			</g>
+			<path d="M 4.3,18.3 l -1.2,-1.5 h .9 l -.3,-.9 l 1.2,1.5 h -.9 z" id="reconnecting">
 		</g>
 	</svg>
 </body>
