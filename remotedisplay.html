@@ -8,6 +8,8 @@
 var liveSocket = null;
 var connectingSockets = [];
 var lastActivity = 0;
+var lastKeyActivity = 0;
+var scale = 0.1;
 var gamma = [19, 33, 42, 48, 53, 57, 61, 65, 68, 71, 74, 77, 79, 82, 84, 86, 89, 91, 93, 94, 96, 98, 100, 102, 103, 105, 106, 108, 109, 111, 112, 114, 115, 117, 118, 119, 120, 122, 123, 124, 125, 127, 128, 129, 130, 131, 132, 133, 134, 136, 137, 138, 139, 140, 141, 142, 143, 144, 145, 146, 146, 147, 148, 149, 150, 151, 152, 153, 154, 154, 155, 156, 157, 158, 159, 160, 160, 161, 162, 163, 164, 164, 165, 166, 167, 167, 168, 169, 170, 170, 171, 172, 173, 173, 174, 175, 175, 176, 177, 177, 178, 179, 179, 180, 181, 181, 182, 183, 183, 184, 185, 185, 186, 187, 187, 188, 189, 189, 190, 190, 191, 192, 192, 193, 193, 194, 195, 195, 196, 196, 197, 198, 198, 199, 199, 200, 200, 201, 202, 202, 203, 203, 204, 204, 205, 205, 206, 206, 207, 208, 208, 209, 209, 210, 210, 211, 211, 212, 212, 213, 213, 214, 214, 215, 215, 216, 216, 217, 217, 218, 218, 219, 219, 220, 220, 221, 221, 222, 222, 223, 223, 224, 224, 225, 225, 226, 226, 226, 227, 227, 228, 228, 229, 229, 230, 230, 231, 231, 231, 232, 232, 233, 233, 234, 234, 235, 235, 235, 236, 236, 237, 237, 238, 238, 239, 239, 239, 240, 240, 241, 241, 241, 242, 242, 243, 243, 244, 244, 244, 245, 245, 246, 246, 246, 247, 247, 248, 248, 248, 249, 249, 250, 250, 250, 251, 251, 252, 252, 252, 253, 253, 254, 254, 254, 255, 255];
 
 function connect() {
@@ -17,6 +19,7 @@ function connect() {
 	var ws = new WebSocket('ws://' + window.location.hash.substring(1));
 	ws.binaryType = 'arraybuffer';
 	ws.addEventListener('message', e => {
+		lastActivity = Date.now();
 		var a = new Uint8Array(e.data);
 		if (a.length == 128) {
 			for (var i = 0; i < 64; i++) {
@@ -35,8 +38,13 @@ function connect() {
 				document.getElementById('bt' + i).style.fill = (a & 1) ? '#999900' : '#444444';
 				a >>= 1;
 			}
+			lastKeyActivity = lastActivity;
+			if (scale < 1.0) {
+				scale = 1.0;
+				onWindowResize();
+				document.getElementById('video').pause();
+			}
 		}
-		lastActivity = Date.now();
 	});
 	ws.addEventListener('open', e => {
 		if (!liveSocket) {
@@ -68,7 +76,8 @@ function connect() {
 }
 
 function connectionWatchdog() {
-	if (liveSocket && Date.now() - lastActivity > 19000) {
+	var now = Date.now() 
+	if (liveSocket && now - lastActivity > 19000) {
 		liveSocket.close();
 		liveSocket = null;
 	}
@@ -83,12 +92,37 @@ function connectionWatchdog() {
 			connectingSockets.shift().close();
 		}
 	}
+	if (now - lastKeyActivity > 60000 && scale === 1.0) {
+		scale = 0.1;
+		onWindowResize();
+		document.getElementById('video').play();
+	}
 }
 
 function onWindowResize() {
+	var fullw = window.innerWidth - 16;
+	var fullh = window.innerHeight - 16;
+	var f = Math.min(fullw/484, fullh/200);
+	var imgw = scale*f*484;
+	var imgh = scale*f*200;
+	var imgx = 8;
+	var imgy = 8;
+	if (scale > 0.5) {
+		imgx += (fullw - imgw)/2;
+		imgy += (fullh - imgh)/2;
+	}
+	else {
+		var margin = 0.02*Math.min(fullw, fullh);
+		imgx += margin;
+		imgy += margin;
+	}
 	var img = document.getElementById('image');
-	img.style.width = (window.innerWidth - 16) + 'px';
-	img.style.height = (window.innerHeight - 16) + 'px';
+	img.style.width = imgw + 'px';
+	img.style.height = imgh + 'px';
+	img.style.left = imgx + 'px';
+	img.style.top = imgy + 'px';
+	var vid = document.getElementById('video');
+	vid.style.height = window.innerHeight + 'px';
 }
 
 document.addEventListener('DOMContentLoaded', function() {
@@ -102,6 +136,12 @@ document.addEventListener('DOMContentLoaded', function() {
 	onWindowResize();
 	window.setInterval(connectionWatchdog, 5000);
 	connectionWatchdog();
+	// for browsers that block autoplay
+	// To disable that in Chrome: go to chrome://flags/#autoplay-policy
+	// and change it from "Default" to "No user gesture is required".
+	document.getElementById('video').addEventListener('click', () => {
+		document.getElementById('video').play();
+	});
 });
 
 </script>
@@ -119,9 +159,27 @@ body {
 	fill: #FF0099;
 	transition: fill 0s;
 }
+#video {
+	width: 100%;
+	object-fit: contain;
+	position: absolute;
+	top: 0px;
+	left: 0px;
+	z-index: -1;
+}
+#image {
+	width: 100%;
+	position: absolute;
+	top: 0px;
+	left: 0px;
+	transition-property: width, height, top, left;
+	transition-duration: 0.3s;
+	transition-timing-function: ease-out;
+}
 </style>
 </head>
 <body>
+	<video src="background.mp4" autoplay loop id="video"></video>
 	<svg width="484" height="200" viewBox="2.4 -20 48.4 20" id="image">
 		<g transform="scale(1, -1)">
 			<path d="M 46.8 0 A 12.58 12.58 0 0 1 50.8 9.2 L 50.8 18.5 A 34.083331 34.083331 0 0 1 40.8 20 L 12.4 20 A 34.083331 34.083331 0 0 1 2.4 18.5 L 2.4 9.2 A 12.58 12.58 0 0 1 6.4 0 Z" style="fill: #000033;"/>
